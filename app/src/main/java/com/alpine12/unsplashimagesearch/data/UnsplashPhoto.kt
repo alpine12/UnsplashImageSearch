@@ -1,4 +1,4 @@
-package com.alpine12.unsplashimagesearch
+package com.alpine12.unsplashimagesearch.data
 
 import android.os.Parcelable
 import kotlinx.android.parcel.Parcelize
