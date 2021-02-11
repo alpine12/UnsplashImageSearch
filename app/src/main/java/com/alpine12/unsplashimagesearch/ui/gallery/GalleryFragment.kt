@@ -1,6 +1,7 @@
 package com.alpine12.unsplashimagesearch.ui.gallery
 
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -25,11 +26,15 @@ class GalleryFragment : Fragment(R.layout.fragment_gallery) {
 
         binding.apply {
             recyclerView.setHasFixedSize(true)
-            recyclerView.adapter = adapter
+            recyclerView.adapter = adapter.withLoadStateHeaderAndFooter(
+                header = UnsplashPhotoLoadStateAdapter {adapter.retry()},
+                footer = UnsplashPhotoLoadStateAdapter {adapter.retry()}
+            )
         }
 
         viewModel.photo.observe(viewLifecycleOwner) {
             adapter.submitData(viewLifecycleOwner.lifecycle, it)
+            Log.d("Fragment", "onViewCreated: ${adapter.itemCount}  , $it")
         }
     }
 

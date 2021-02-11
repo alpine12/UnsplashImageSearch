@@ -20,7 +20,7 @@ class UnsplashPagingSource(
             val response = unsplashApi.searchPhotos(query, position, params.loadSize)
             val photos = response.results
 
-            Log.d("PagingSource", "position: $position ,sizeLoad ${params.loadSize} ,paramKey ${params.key}")
+            Log.d("PagingSource", "position: $position ,sizeLoad ${params.loadSize} ,paramKey ${params.key} , size ${photos.size}")
             LoadResult.Page(
                 data = photos,
                 prevKey = if (position == UNSPLASH_STARTING_PAGE_INDEX) null else position - 1,
