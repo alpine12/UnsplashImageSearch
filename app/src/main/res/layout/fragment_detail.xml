@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -45,6 +46,22 @@
                 android:visibility="gone"
                 tools:text="Photo by XYZ on Unsplash"
                 tools:visibility="visible" />
+
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/button_download"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp"
+                android:padding="8dp"
+                android:text="download"
+                android:visibility="gone"
+                app:icon="@drawable/ic_download"
+                app:iconGravity="textStart"
+                app:iconPadding="0dp"
+                tools:visibility="visible" />
+
 
         </LinearLayout>
 

@@ -56,7 +56,7 @@ class GalleryFragment : Fragment(R.layout.fragment_gallery),
                 buttonRetry.isVisible = loadState.source.refresh is LoadState.Error
                 textViewError.isVisible = loadState.source.refresh is LoadState.Error
 
-                // empety view
+                // empty view
                 if (loadState.source.refresh is LoadState.NotLoading
                     && loadState.append.endOfPaginationReached
                     && adapter.itemCount < 1
