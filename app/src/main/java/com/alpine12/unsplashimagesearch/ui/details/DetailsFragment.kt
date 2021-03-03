@@ -9,6 +9,7 @@ import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
+import android.os.Environment.DIRECTORY_PICTURES
 import android.provider.MediaStore
 import android.util.Log
 import android.view.View
@@ -38,44 +39,68 @@ class DetailsFragment : Fragment(R.layout.fragment_detail), EasyPermissions.Perm
     private val TAG = "DetailsFragment"
     private val args by navArgs<DetailsFragmentArgs>()
 
+    private var imageName: String? = null
+    private var imgView: View? = null
+    private val imageFolder = "Unsplash"
+    private lateinit var binding: FragmentDetailBinding
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val binding = FragmentDetailBinding.bind(view)
+        binding = FragmentDetailBinding.bind(view)
 
         binding.apply {
             val photo = args.photo
 
+            val path: String =
+                Environment.getExternalStoragePublicDirectory(DIRECTORY_PICTURES).toString()
+            val file: File = File("$path/$imageFolder/${args.photo.id}.jpg")
 
-            Glide.with(this@DetailsFragment)
-                .load(photo.urls.full)
-                .error(R.drawable.ic_error)
-                .listener(object : RequestListener<Drawable> {
-                    override fun onLoadFailed(
-                        e: GlideException?,
-                        model: Any?,
-                        target: Target<Drawable>?,
-                        isFirstResource: Boolean
-                    ): Boolean {
-                        progressBar.isVisible = false
-                        return false
-                    }
+            if (file.exists()) {
+                Glide.with(this@DetailsFragment).load(file)
+                    .into(imageView)
 
-                    override fun onResourceReady(
-                        resource: Drawable?,
-                        model: Any?,
-                        target: Target<Drawable>?,
-                        dataSource: DataSource?,
-                        isFirstResource: Boolean
-                    ): Boolean {
-                        progressBar.isVisible = false
-                        textViewCreator.isVisible = true
-                        buttonDownload.isVisible = true
-                        textViewDescription.isVisible = photo.description != null
-                        return false
-                    }
-                })
-                .into(imageView)
+                progressBar.isVisible = false
+                textViewCreator.isVisible = true
+                buttonDownload.apply {
+                    isVisible = true
+                    isEnabled = false
+                }
+                textViewDescription.isVisible = photo.description != null
+
+                Log.d(TAG, "onViewCreated: Is Opened")
+            } else {
+
+                Glide.with(this@DetailsFragment).load(photo.urls.full)
+                    .error(R.drawable.ic_error)
+                    .listener(object : RequestListener<Drawable> {
+                        override fun onLoadFailed(
+                            e: GlideException?,
+                            model: Any?,
+                            target: Target<Drawable>?,
+                            isFirstResource: Boolean
+                        ): Boolean {
+                            progressBar.isVisible = false
+                            return false
+                        }
+
+                        override fun onResourceReady(
+                            resource: Drawable?,
+                            model: Any?,
+                            target: Target<Drawable>?,
+                            dataSource: DataSource?,
+                            isFirstResource: Boolean
+                        ): Boolean {
+                            progressBar.isVisible = false
+                            textViewCreator.isVisible = true
+                            buttonDownload.isVisible = true
+                            textViewDescription.isVisible = photo.description != null
+                            return false
+                        }
+                    }).into(imageView)
+                Log.d(TAG, "onViewCreated: tidak tersimpan")
+
+            }
 
             textViewDescription.text = photo.description
 
@@ -90,25 +115,21 @@ class DetailsFragment : Fragment(R.layout.fragment_detail), EasyPermissions.Perm
                 paint.isUnderlineText = true
             }
 
-            buttonDownload.setOnClickListener {
+            imageName = photo.id
+            imgView = imageView
 
-                if (!isAccessed) {
-                    requestStorage()
-                } else {
-                   downloadImage(photo.id, imageView)
-                }
+            buttonDownload.setOnClickListener {
+                requestStorage()
             }
         }
     }
 
-    private fun downloadImage(name: String, imageView: View) {
-        val imageFolder = "Unsplash"
-        val image = getBitmapFromView(imageView)
+    private fun downloadImage() {
+        val image = getBitmapFromView(imgView!!)
 
         if (android.os.Build.VERSION.SDK_INT >= 29) {
             val values = contentValues()
-            values.put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/" + imageFolder)
-            values.put(MediaStore.Images.Media.DISPLAY_NAME, name)
+            values.put(MediaStore.Images.Media.DISPLAY_NAME, imageName)
             values.put(MediaStore.Images.Media.IS_PENDING, true)
             // RELATIVE_PATH and IS_PENDING are introduced in API 29.
 
@@ -120,7 +141,11 @@ class DetailsFragment : Fragment(R.layout.fragment_detail), EasyPermissions.Perm
                 saveImagesToStream(image, context?.contentResolver?.openOutputStream(uri))
                 values.put(MediaStore.Images.Media.IS_PENDING, false)
                 context?.contentResolver?.update(uri, values, null, null)
-                Toast.makeText(context, "Tersimpan di ${uri.path}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Tersimpan di ${uri.pathSegments}", Toast.LENGTH_SHORT)
+                    .show()
+
+                binding?.buttonDownload?.isEnabled = false
+
             }
         } else {
             val directory =
@@ -133,7 +158,7 @@ class DetailsFragment : Fragment(R.layout.fragment_detail), EasyPermissions.Perm
                 directory.mkdir()
             }
 
-            val fileName = "$name.jpg"
+            val fileName = "$imageName.jpg"
             val file = File(directory, fileName)
             saveImagesToStream(image, FileOutputStream(file))
             if (file.absolutePath != null) {
@@ -146,6 +171,7 @@ class DetailsFragment : Fragment(R.layout.fragment_detail), EasyPermissions.Perm
                 )
             }
             Toast.makeText(context, "Tersimpan di ${file.absolutePath}", Toast.LENGTH_SHORT).show()
+            binding?.buttonDownload?.isEnabled = false
         }
     }
 
@@ -154,6 +180,7 @@ class DetailsFragment : Fragment(R.layout.fragment_detail), EasyPermissions.Perm
         values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
         values.put(MediaStore.Images.Media.DATE_ADDED, System.currentTimeMillis() / 1000)
         values.put(MediaStore.Images.Media.DATE_TAKEN, System.currentTimeMillis())
+        values.put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/" + imageFolder)
         return values
     }
 
@@ -176,26 +203,25 @@ class DetailsFragment : Fragment(R.layout.fragment_detail), EasyPermissions.Perm
         }
     }
 
-    private var isAccessed = false
+    private var isGranted = false
+
     @AfterPermissionGranted(REQUEST_WRITE_STORAGE)
     private fun requestStorage() {
-
         val permission = EasyPermissions.hasPermissions(
             requireContext(),
             Manifest.permission.WRITE_EXTERNAL_STORAGE,
-
         )
         if (permission) {
             Toast.makeText(context, "Access", Toast.LENGTH_SHORT).show()
-            isAccessed = true
+            downloadImage()
         } else {
-
             EasyPermissions.requestPermissions(
                 this,
                 "Minta tolong accept",
                 REQUEST_WRITE_STORAGE,
                 Manifest.permission.WRITE_EXTERNAL_STORAGE
             )
+
         }
     }
 
